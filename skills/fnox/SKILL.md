@@ -1,5 +1,5 @@
 ---
-name: fnox-cli
+name: fnox
 description: Manage secrets with the fnox CLI - a secrets management tool that bridges encrypted secrets in git with remote cloud providers. Use this skill when the user asks about "fnox", "secrets management", or needs to set, get, list, import, export, or manage encrypted secrets and secret providers.
 ---
 
