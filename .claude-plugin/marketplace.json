@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "knowsuchagency",
-      "source": ".",
+      "source": "./",
       "description": "Skills for image generation, CLI tools, and typesetting",
       "version": "1.0.0"
     }
