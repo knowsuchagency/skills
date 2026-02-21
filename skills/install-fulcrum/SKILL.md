@@ -359,13 +359,56 @@ Go to **APIs & Services → Credentials**:
 6. Authorize access with your Google account
 7. Back in Settings, toggle **Calendar** and/or **Gmail** features as desired
 
-## Step 11: Verification
+## Step 11 (Optional): Cloudflare Integration (Host Services on Custom Domains)
+
+Ask the user if they want to connect Cloudflare so Fulcrum can deploy and host web apps on their own domain. If yes:
+
+Fulcrum supports two ways to expose deployed apps:
+
+- **DNS-based**: Creates A records pointing to your server IP, with automatic Cloudflare Origin CA certificates for HTTPS
+- **Tunnel-based**: Creates a Cloudflare Tunnel via `cloudflared` — no public IP exposure, traffic routes through Cloudflare's edge network (more secure, works behind NAT)
+
+Both methods require a Cloudflare API token. Tunnels additionally require your Account ID.
+
+**Prerequisite**: A domain with its nameservers pointing to Cloudflare (managed in the Cloudflare dashboard).
+
+### 11a. Create a Cloudflare API token
+
+1. Go to https://dash.cloudflare.com/profile/api-tokens
+2. Click **Create Token**
+3. Choose **Create Custom Token**
+4. Add these permissions:
+   - **Zone → DNS → Edit** (required — for creating DNS records)
+   - **Zone → SSL and Certificates → Edit** (required — for generating Origin CA certificates)
+   - **Account → Cloudflare Tunnel → Edit** (optional — only needed if you want tunnel-based exposure)
+5. Zone Resources: **Include → All Zones** (or select a specific zone)
+6. Click **Continue to summary → Create Token**
+7. Copy the token (it's only shown once)
+
+### 11b. Find your Account ID (needed for tunnels)
+
+Your Account ID is visible in:
+- The Cloudflare dashboard URL: `https://dash.cloudflare.com/<account_id>/...`
+- Or on any domain's **Overview** page in the right sidebar under **API**
+
+### 11c. Configure in Fulcrum
+
+1. Open Fulcrum at `http://localhost:7777`
+2. Go to **Settings → General → Integrations**
+3. Paste the **Cloudflare API Token**
+4. Paste the **Account ID** (if you want tunnel support)
+5. Click **Save**
+
+When deploying apps through Fulcrum, you can now choose DNS or Tunnel exposure and assign custom subdomains on your Cloudflare-managed domain.
+
+## Step 12: Verification
 
 Confirm everything is working:
 
 - [ ] Fulcrum UI accessible at `http://localhost:7777`
 - [ ] MCP tools available in Claude Desktop (try asking Claude to list your tasks)
 - [ ] If Google connected: account visible in Settings → Integrations
+- [ ] If Cloudflare connected: token and account ID saved in Settings → Integrations
 - [ ] For remote: tunnel persists after disconnecting/reconnecting
 
 Installation complete! Fulcrum is ready to use.
