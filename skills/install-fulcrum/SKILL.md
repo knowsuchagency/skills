@@ -53,16 +53,18 @@ If the user doesn't have an SSH key, help them generate one first with `ssh-keyg
 ### 2e. Create the server
 
 ```bash
-hcloud server create --name fulcrum --type cpx31 --image ubuntu-24.04 --ssh-key fulcrum --location fsn1
+hcloud server create --name fulcrum --type cax21 --image ubuntu-24.04 --ssh-key fulcrum --location fsn1
 ```
 
-- **cpx31**: 4 AMD vCPU, 8GB RAM, 80GB disk (~€12/mo) — minimum 8GB RAM recommended for running AI coding agents
+- **cax21** (default): 4 ARM vCPU, 8GB RAM, 80GB disk (~€6.49/mo) — best value; ARM-only locations below
+- **cpx31** (alternative): 4 AMD vCPU, 8GB RAM, 80GB disk (~€12/mo) — use if you need a US or Singapore location
 - Let the user pick a location:
-  - `fsn1`, `nbg1` — Germany
-  - `hel1` — Finland
-  - `ash` — US East (Ashburn, VA)
-  - `hil` — US East (Hillsboro, OR)
-  - `sin` — Singapore
+  - `fsn1` — Germany (Falkenstein) — ARM & x86
+  - `nbg1` — Germany (Nuremberg) — ARM & x86
+  - `hel1` — Finland (Helsinki) — ARM & x86
+  - `ash` — US East (Ashburn, VA) — x86 only
+  - `hil` — US West (Hillsboro, OR) — x86 only
+  - `sin` — Singapore — x86 only
 
 Note the server's IPv4 address from the output.
 
@@ -120,6 +122,20 @@ source ~/.bashrc  # or restart shell
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+### fnox (secrets management — required)
+
+- **macOS**: `brew install jdx/tap/fnox`
+- **Linux / fallback**: Download the latest release binary from the GitHub API:
+
+```bash
+# Detect platform and install the latest fnox release
+FNOX_URL=$(curl -s https://api.github.com/repos/jdx/fnox/releases/latest \
+  | grep "browser_download_url" \
+  | grep "$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" \
+  | head -1 | cut -d '"' -f 4)
+curl -fsSL "$FNOX_URL" | tar xz -C /usr/local/bin fnox
+```
+
 ## Step 5: Install Fulcrum CLI
 
 ```bash
@@ -136,7 +152,7 @@ Verify it's running — the web UI should be accessible at `http://localhost:777
 
 ## Step 7 (Remote only): Configure Persistent SSH Port Forwarding
 
-This makes the remote Fulcrum instance accessible at `http://localhost:7777` on the user's local machine.
+This makes the remote Fulcrum instance accessible at `http://localhost:7777` on the user's local machine. Port 3000 is also forwarded for web apps and dev servers that agents may spin up on the remote machine.
 
 ### Option A: SSH config (simplest)
 
@@ -147,6 +163,7 @@ Host fulcrum-server
     HostName <server-ip>
     User root
     LocalForward 7777 localhost:7777
+    LocalForward 3000 localhost:3000
 ```
 
 Then connect with `ssh fulcrum-server` — the tunnel is active as long as the SSH session is open.
@@ -156,7 +173,7 @@ Then connect with `ssh fulcrum-server` — the tunnel is active as long as the S
 Install autossh (`brew install autossh` or `apt install autossh`) and run:
 
 ```bash
-autossh -M 0 -f -N -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" -L 7777:localhost:7777 fulcrum-server
+autossh -M 0 -f -N -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" -L 7777:localhost:7777 -L 3000:localhost:3000 fulcrum-server
 ```
 
 ### Option C: systemd user service (persistent across reboots)
@@ -169,7 +186,7 @@ Description=SSH tunnel to Fulcrum server
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/ssh -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 7777:localhost:7777 fulcrum-server
+ExecStart=/usr/bin/ssh -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 7777:localhost:7777 -L 3000:localhost:3000 fulcrum-server
 Restart=always
 RestartSec=5
 
