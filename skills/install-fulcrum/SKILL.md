@@ -136,6 +136,29 @@ FNOX_URL=$(curl -s https://api.github.com/repos/jdx/fnox/releases/latest \
 curl -fsSL "$FNOX_URL" | tar xz -C /usr/local/bin fnox
 ```
 
+### Claude Code (AI coding agent CLI)
+
+Check if already installed:
+
+```bash
+claude --version
+```
+
+If not installed:
+
+- **macOS / Linux**: `curl -fsSL https://claude.ai/install.sh | bash`
+- **macOS (Homebrew)**: `brew install --cask claude-code`
+
+The native install (curl) is recommended as it auto-updates in the background.
+
+If this is a fresh install, the user needs to connect Claude Code to their Claude subscription. Tell them to either SSH into the machine or — once Fulcrum is installed and running — open a terminal session from the Fulcrum UI, then run:
+
+```bash
+claude auth login
+```
+
+This prints an OAuth URL. They copy it into a browser on their local machine, authenticate with their Claude Pro/Max/Teams subscription, and the token is stored on the remote machine automatically.
+
 ## Step 5: Install Fulcrum CLI
 
 ```bash
