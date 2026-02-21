@@ -86,17 +86,17 @@ ssh fulcrum-server
 
 ### 2g. Create non-root user
 
-Hetzner provisions servers with root-only access. Create a dedicated `fulcrum` user with sudo privileges so the service doesn't run as root:
+Hetzner provisions servers with root-only access. Create a user on the remote machine that matches the local username (`$USER`) so Fulcrum runs as you with your own home directory:
 
 ```bash
-ssh fulcrum-server "useradd -m -s /bin/bash fulcrum \
-  && usermod -aG sudo fulcrum \
-  && echo 'fulcrum ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/fulcrum \
-  && mkdir -p /home/fulcrum/.ssh \
-  && cp /root/.ssh/authorized_keys /home/fulcrum/.ssh/ \
-  && chown -R fulcrum:fulcrum /home/fulcrum/.ssh \
-  && chmod 700 /home/fulcrum/.ssh \
-  && chmod 600 /home/fulcrum/.ssh/authorized_keys"
+ssh fulcrum-server "useradd -m -s /bin/bash $USER \
+  && usermod -aG sudo $USER \
+  && echo '$USER ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USER \
+  && mkdir -p /home/$USER/.ssh \
+  && cp /root/.ssh/authorized_keys /home/$USER/.ssh/ \
+  && chown -R $USER:$USER /home/$USER/.ssh \
+  && chmod 700 /home/$USER/.ssh \
+  && chmod 600 /home/$USER/.ssh/authorized_keys"
 ```
 
 Now update `~/.ssh/config` on the local machine to use the new user:
@@ -104,14 +104,16 @@ Now update `~/.ssh/config` on the local machine to use the new user:
 ```
 Host fulcrum-server
     HostName <server-ip>
-    User fulcrum
+    User <local-username>
 ```
+
+(Replace `<local-username>` with the user's actual local username — the value of `$USER`.)
 
 Verify you can connect as the new user:
 
 ```bash
 ssh fulcrum-server whoami
-# Should print: fulcrum
+# Should print your local username
 ```
 
 ## Step 3: Check Prerequisites
@@ -219,7 +221,7 @@ Update `~/.ssh/config` on the local machine:
 ```
 Host fulcrum-server
     HostName <server-ip>
-    User fulcrum
+    User <local-username>
     LocalForward 7777 localhost:7777
     LocalForward 3000 localhost:3000
 ```
