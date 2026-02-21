@@ -68,9 +68,9 @@ hcloud server create --name fulcrum --type cax21 --image ubuntu-24.04 --ssh-key 
 
 Note the server's IPv4 address from the output.
 
-### 2f. Configure SSH access
+### 2f. Configure SSH access (initial)
 
-Add to `~/.ssh/config` on the local machine:
+Add to `~/.ssh/config` on the local machine (we'll update the user in the next step):
 
 ```
 Host fulcrum-server
@@ -82,6 +82,36 @@ Verify connectivity:
 
 ```bash
 ssh fulcrum-server
+```
+
+### 2g. Create non-root user
+
+Hetzner provisions servers with root-only access. Create a dedicated `fulcrum` user with sudo privileges so the service doesn't run as root:
+
+```bash
+ssh fulcrum-server "useradd -m -s /bin/bash fulcrum \
+  && usermod -aG sudo fulcrum \
+  && echo 'fulcrum ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/fulcrum \
+  && mkdir -p /home/fulcrum/.ssh \
+  && cp /root/.ssh/authorized_keys /home/fulcrum/.ssh/ \
+  && chown -R fulcrum:fulcrum /home/fulcrum/.ssh \
+  && chmod 700 /home/fulcrum/.ssh \
+  && chmod 600 /home/fulcrum/.ssh/authorized_keys"
+```
+
+Now update `~/.ssh/config` on the local machine to use the new user:
+
+```
+Host fulcrum-server
+    HostName <server-ip>
+    User fulcrum
+```
+
+Verify you can connect as the new user:
+
+```bash
+ssh fulcrum-server whoami
+# Should print: fulcrum
 ```
 
 ## Step 3: Check Prerequisites
@@ -122,6 +152,11 @@ source ~/.bashrc  # or restart shell
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+### age (encryption — required by fnox)
+
+- **Ubuntu/Debian**: `sudo apt install -y age`
+- **macOS**: `brew install age`
+
 ### fnox (secrets management — required)
 
 - **macOS**: `brew install jdx/tap/fnox`
@@ -133,7 +168,7 @@ FNOX_URL=$(curl -s https://api.github.com/repos/jdx/fnox/releases/latest \
   | grep "browser_download_url" \
   | grep "$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" \
   | head -1 | cut -d '"' -f 4)
-curl -fsSL "$FNOX_URL" | tar xz -C /usr/local/bin fnox
+curl -fsSL "$FNOX_URL" | sudo tar xz -C /usr/local/bin fnox
 ```
 
 ### Claude Code (AI coding agent CLI)
@@ -184,7 +219,7 @@ Update `~/.ssh/config` on the local machine:
 ```
 Host fulcrum-server
     HostName <server-ip>
-    User root
+    User fulcrum
     LocalForward 7777 localhost:7777
     LocalForward 3000 localhost:3000
 ```

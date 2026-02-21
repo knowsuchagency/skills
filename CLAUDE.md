@@ -23,6 +23,12 @@ Each skill is defined by a single `SKILL.md` with YAML frontmatter:
 - `description` — natural language triggers for skill discovery
 - `allowed-tools` — optional restricted Bash commands the skill may use
 
+## Versioning
+
+When bumping the version, update **both** files:
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+
 ## Skills
 
 Two categories:
