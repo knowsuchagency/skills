@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Claude Code plugin (`knowsuchagency` v2.0.0) providing 8 skills — markdown-based knowledge modules that Claude Code loads on demand. There is no build system, compilation, or test suite; all content is static Markdown.
+A Claude Code plugin — markdown-based skills that Claude Code loads on demand. No build system, compilation, or test suite; all content is static Markdown.
 
 ## Architecture
 
@@ -26,14 +26,5 @@ Each skill is defined by a single `SKILL.md` with YAML frontmatter:
 ## Skills
 
 Two categories:
-- **Executable skills** (generate-image, edit-image) — contain Python scripts run via `uv run`, use `fnox` for secrets
-- **Reference skills** (fnox, codex-cli, gemini-cli, linear-cli, typst, wmill-cli) — pure documentation/CLI guides
-
-The typst skill splits content across `references/` subdirectory files (core-syntax.md, programming.md, visualization.md).
-
-## Installation
-
-```
-/plugin marketplace add knowsuchagency/claude
-/plugin install knowsuchagency
-```
+- **Executable skills** — contain Python scripts run via `uv run`, use `fnox` for secrets
+- **Reference skills** — pure documentation, CLI guides, or interactive installation workflows

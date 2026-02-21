@@ -8,6 +8,7 @@ A collection of skills for [Claude Code](https://claude.com/claude-code).
 /plugin marketplace add knowsuchagency/claude
 /plugin install knowsuchagency
 ```
+<<<<<<< HEAD
 
 ## Skills
 
@@ -28,3 +29,5 @@ A collection of skills for [Claude Code](https://claude.com/claude-code).
 - [uv](https://docs.astral.sh/uv/) — required by image generation/editing skills
 - [fnox](https://github.com/fnox-rs/fnox) — secrets management (used by image skills to load API keys)
 - A [fal.ai](https://fal.ai) account and `FAL_KEY` — for image generation/editing
+=======
+>>>>>>> add-install-fulcrum-agent-p90q
