@@ -1,0 +1,8 @@
+{
+  "name": "knowsuchagency",
+  "description": "A collection of skills for image generation, CLI tools, and typesetting",
+  "version": "1.0.0",
+  "author": {
+    "name": "knowsuchagency"
+  }
+}
