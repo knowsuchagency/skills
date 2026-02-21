@@ -15,6 +15,7 @@ A collection of skills for [Claude Code](https://claude.com/claude-code).
 |-------|-------------|
 | `generate-image` | Generate images using fal.ai GPT-Image 1.5 |
 | `edit-image` | Edit images using fal.ai GPT-Image 1.5 |
+| `install-fulcrum` | Guided step-by-step installation of [Fulcrum](https://github.com/knowsuchagency/fulcrum) (local or remote VPS) |
 | `fnox-cli` | Manage secrets with the fnox CLI |
 | `codex-cli` | Use the OpenAI Codex coding agent via CLI |
 | `gemini-cli` | Use the Google Gemini coding agent via CLI |
