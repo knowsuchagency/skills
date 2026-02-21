@@ -2,6 +2,13 @@
 
 A collection of skills for [Claude Code](https://claude.com/claude-code).
 
+## Installation
+
+```
+/plugin marketplace add knowsuchagency/claude
+/plugin install knowsuchagency
+```
+
 ## Skills
 
 | Skill | Description |
@@ -14,13 +21,6 @@ A collection of skills for [Claude Code](https://claude.com/claude-code).
 | `linear-cli` | Manage Linear issues, projects, and teams |
 | `typst` | Expert reference for the Typst typesetting system |
 | `wmill-cli` | Manage Windmill workspaces and scripts |
-
-## Installation
-
-```
-/plugin marketplace add knowsuchagency/claude
-/plugin install knowsuchagency
-```
 
 ## Prerequisites
 
