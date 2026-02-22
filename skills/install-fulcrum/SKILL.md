@@ -401,7 +401,322 @@ Your Account ID is visible in:
 
 When deploying apps through Fulcrum, you can now choose DNS or Tunnel exposure and assign custom subdomains on your Cloudflare-managed domain.
 
-## Step 12: Verification
+## Step 12 (Optional): Agent-Browser (Web Automation for Agents)
+
+Ask the user if they want agents to be able to browse and interact with websites (navigating pages, filling forms, clicking buttons, taking screenshots, extracting data). If yes:
+
+### 12a. Install agent-browser
+
+```bash
+bun install -g agent-browser
+```
+
+### 12b. Download Chromium
+
+- **Linux**: `agent-browser install --with-deps` (also installs required system libraries)
+- **macOS**: `agent-browser install`
+
+Once installed, agents can use the `agent-browser` CLI for web automation tasks.
+
+## Step 13 (Optional): Backup Configuration
+
+Ask the user if they want to set up automated backups. Explain the two approaches and recommend both for VPS users:
+
+- **Hetzner Cloud Snapshots** — whole-server point-in-time images, quick disaster recovery (VPS only, same provider)
+- **Restic + Backblaze B2** — encrypted, deduplicated off-site backups with file-level restore (works for any setup)
+
+### 13a. Hetzner Cloud Snapshots (VPS only)
+
+Only applicable if the user is on Hetzner (hcloud is already configured from Step 2).
+
+Create a test snapshot:
+
+```bash
+hcloud server create-image fulcrum --type snapshot --description "fulcrum-backup-$(date +%Y-%m-%d)"
+```
+
+Verify it was created:
+
+```bash
+hcloud image list --type snapshot
+```
+
+Set up a daily snapshot via a systemd timer on the **VPS**:
+
+Create `/etc/systemd/system/hcloud-snapshot.service`:
+
+```ini
+[Unit]
+Description=Hetzner Cloud Server Snapshot
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'hcloud server create-image fulcrum --type snapshot --description "fulcrum-backup-$(date +%%Y-%%m-%%d)"'
+```
+
+Create `/etc/systemd/system/hcloud-snapshot.timer`:
+
+```ini
+[Unit]
+Description=Daily Hetzner Cloud Snapshot
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable it:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now hcloud-snapshot.timer
+```
+
+Set up weekly cleanup to delete snapshots older than 30 days. Create `/usr/local/bin/hcloud-snapshot-cleanup.sh`:
+
+```bash
+#!/bin/bash
+CUTOFF=$(date -d "30 days ago" +%s 2>/dev/null || date -v-30d +%s)
+hcloud image list --type snapshot -o json | jq -r '.[] | "\(.id) \(.description) \(.created)"' | while read -r id desc created; do
+  created_ts=$(date -d "$created" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%S" "$created" +%s)
+  if [ "$created_ts" -lt "$CUTOFF" ]; then
+    echo "Deleting snapshot $id ($desc)"
+    hcloud image delete "$id"
+  fi
+done
+```
+
+```bash
+sudo chmod +x /usr/local/bin/hcloud-snapshot-cleanup.sh
+```
+
+Create `/etc/systemd/system/hcloud-snapshot-cleanup.service`:
+
+```ini
+[Unit]
+Description=Clean up old Hetzner Cloud snapshots
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/hcloud-snapshot-cleanup.sh
+```
+
+Create `/etc/systemd/system/hcloud-snapshot-cleanup.timer`:
+
+```ini
+[Unit]
+Description=Weekly Hetzner snapshot cleanup
+
+[Timer]
+OnCalendar=Mon *-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now hcloud-snapshot-cleanup.timer
+```
+
+Pricing: ~€0.012/GB/month stored. An 80 GB server snapshot costs ~€0.96/month.
+
+### 13b. Restic + Backblaze B2 (off-site backups)
+
+This works for both local and remote installations.
+
+#### Install restic
+
+- **Ubuntu/Debian**: `sudo apt install -y restic`
+- **macOS**: `brew install restic`
+
+#### Create a Backblaze B2 bucket
+
+Tell the user to:
+
+1. Create a Backblaze account at https://www.backblaze.com/sign-up (if they don't have one)
+2. In the B2 Cloud Storage console, create a **private** bucket (e.g. `fulcrum-backups`)
+3. Go to **Account → Application Keys** and create a key scoped to that bucket
+4. Copy the **Application Key ID** and **Application Key** (shown only once)
+
+#### Store credentials with fnox
+
+```bash
+fnox set B2_ACCOUNT_ID "<app-key-id>" -g
+fnox set B2_ACCOUNT_KEY "<app-key-secret>" -g
+fnox set RESTIC_PASSWORD "<strong-backup-password>" -g
+fnox set RESTIC_REPOSITORY "b2:<bucket-name>:/fulcrum" -g
+```
+
+Remind the user to save the `RESTIC_PASSWORD` somewhere safe — without it the backups cannot be decrypted.
+
+#### Initialize the repository
+
+```bash
+fnox exec -- restic init
+```
+
+#### Run a test backup
+
+Back up the entire disk, excluding virtual filesystems and ephemeral directories:
+
+```bash
+fnox exec -- restic backup / \
+  --exclude /proc \
+  --exclude /sys \
+  --exclude /dev \
+  --exclude /tmp \
+  --exclude /run \
+  --exclude /mnt \
+  --exclude /media \
+  --exclude /swapfile \
+  --exclude node_modules
+```
+
+Verify the snapshot:
+
+```bash
+fnox exec -- restic snapshots
+```
+
+#### Set up automated hourly backups
+
+Restic only stores diffs (deduplicated), so hourly backups are lightweight after the initial run.
+
+**Linux (systemd timer):**
+
+Create `/etc/systemd/system/restic-backup.service`:
+
+```ini
+[Unit]
+Description=Restic backup to Backblaze B2
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'fnox exec -- restic backup / --exclude /proc --exclude /sys --exclude /dev --exclude /tmp --exclude /run --exclude /mnt --exclude /media --exclude /swapfile --exclude node_modules'
+```
+
+Create `/etc/systemd/system/restic-backup.timer`:
+
+```ini
+[Unit]
+Description=Hourly Restic backup
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now restic-backup.timer
+```
+
+**macOS (launchctl):**
+
+Create `~/Library/LaunchAgents/com.restic.backup.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.restic.backup</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>fnox exec -- restic backup / --exclude /proc --exclude /sys --exclude /dev --exclude /tmp --exclude /run --exclude /mnt --exclude /media --exclude /swapfile --exclude node_modules</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>3600</integer>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+```
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.restic.backup.plist
+```
+
+#### Set up weekly pruning
+
+**Linux (systemd timer):**
+
+Create `/etc/systemd/system/restic-prune.service`:
+
+```ini
+[Unit]
+Description=Restic prune old snapshots
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'fnox exec -- restic forget --keep-hourly 24 --keep-daily 30 --keep-weekly 12 --keep-monthly 24 --prune'
+```
+
+Create `/etc/systemd/system/restic-prune.timer`:
+
+```ini
+[Unit]
+Description=Weekly Restic prune
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now restic-prune.timer
+```
+
+**macOS (launchctl):**
+
+Create `~/Library/LaunchAgents/com.restic.prune.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.restic.prune</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>fnox exec -- restic forget --keep-hourly 24 --keep-daily 30 --keep-weekly 12 --keep-monthly 24 --prune</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>4</integer>
+    </dict>
+</dict>
+</plist>
+```
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.restic.prune.plist
+```
+
+## Step 14: Verification
 
 Confirm everything is working:
 
@@ -410,5 +725,7 @@ Confirm everything is working:
 - [ ] If Google connected: account visible in Settings → Integrations
 - [ ] If Cloudflare connected: token and account ID saved in Settings → Integrations
 - [ ] For remote: tunnel persists after disconnecting/reconnecting
+- [ ] If agent-browser installed: `agent-browser --version` returns a version
+- [ ] If backups configured: test snapshot or `restic snapshots` shows a successful backup
 
 Installation complete! Fulcrum is ready to use.
