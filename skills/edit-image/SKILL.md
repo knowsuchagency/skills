@@ -11,7 +11,7 @@ Edit images by running the bundled Python script via `uv run`. The script loads 
 ## Usage
 
 ```bash
-uv run ~/.claude/skills/edit-image/scripts/edit.py --prompt "PROMPT" --image <path-or-url> [OPTIONS]
+uv run ./scripts/edit.py --prompt "PROMPT" --image <path-or-url> [OPTIONS]
 ```
 
 ## Options

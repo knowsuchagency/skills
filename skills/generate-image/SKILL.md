@@ -11,7 +11,7 @@ Generate images by running the bundled Python script via `uv run`. The script lo
 ## Usage
 
 ```bash
-uv run ~/.claude/skills/generate-image/scripts/generate.py --prompt "PROMPT" [OPTIONS]
+uv run ./scripts/generate.py --prompt "PROMPT" [OPTIONS]
 ```
 
 ## Options
