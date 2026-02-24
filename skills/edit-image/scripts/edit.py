@@ -90,6 +90,9 @@ def main() -> None:
     parser.add_argument("--format", default="png", choices=["jpeg", "png", "webp"], dest="output_format")
     parser.add_argument("--background", default="auto", choices=["auto", "transparent", "opaque"])
     parser.add_argument("--seed", type=int, default=None, help="Seed for reproducibility (Gemini only)")
+    naming = parser.add_mutually_exclusive_group()
+    naming.add_argument("--filename", default=None, help="Output base name (no extension)")
+    naming.add_argument("--output", default=None, help="Output path stem (no extension, overrides --output-dir)")
     parser.add_argument("--output-dir", default=tempfile.gettempdir())
     args = parser.parse_args()
 
@@ -138,17 +141,23 @@ def main() -> None:
 
     result = fal_client.subscribe(model_id, arguments=arguments)
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    slug = slugify(args.prompt)
+    if args.output:
+        base = Path(args.output)
+        base.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        if args.filename:
+            base = output_dir / args.filename
+        else:
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            slug = slugify(args.prompt)
+            base = output_dir / f"{timestamp}-{slug}"
 
     for i, image in enumerate(result["images"]):
         ext = args.output_format
         suffix = f"-{i + 1}" if args.num_images > 1 else ""
-        filename = f"{timestamp}-{slug}{suffix}.{ext}"
-        dest = output_dir / filename
+        dest = base.parent / f"{base.name}{suffix}.{ext}"
         download_image(image["url"], dest)
         print(dest)
 

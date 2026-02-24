@@ -29,6 +29,8 @@ uv run ./scripts/edit.py --prompt "PROMPT" --image <path-or-url> [OPTIONS]
 | `--format` | `png` | `jpeg`, `png`, `webp` |
 | `--background` | `auto` | `auto`, `transparent`, `opaque` (GPT only) |
 | `--seed` | *(none)* | Integer for reproducibility (Gemini only) |
+| `--filename` | *(none)* | Output base name without extension (uses `--output-dir`) |
+| `--output` | *(none)* | Output path stem without extension (overrides `--output-dir`) |
 | `--output-dir` | OS temp dir | Any directory path |
 
 ## Model Selection
