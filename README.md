@@ -4,6 +4,14 @@ A collection of skills for [Claude Code](https://claude.com/claude-code).
 
 ## Installation
 
+From the terminal:
+
+```bash
+claude plugin install knowsuchagency@knowsuchagency/claude
+```
+
+Or from within Claude Code:
+
 ```
 /plugin marketplace add knowsuchagency/claude
 /plugin install knowsuchagency
