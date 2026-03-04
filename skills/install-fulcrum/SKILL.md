@@ -131,17 +131,25 @@ Both should be available. On Ubuntu they are pre-installed; on macOS git comes w
 
 Run these on the target machine:
 
+### mise (tool version manager)
+
+```bash
+curl https://mise.run | sh
+```
+
+Follow any shell activation instructions printed by the installer, then restart your shell.
+
 ### bun (JavaScript runtime)
 
 ```bash
-curl -fsSL https://bun.sh/install | bash
-source ~/.bashrc  # or restart shell
+mise use -g bun
 ```
 
 ### Node.js
 
-- **Ubuntu/Debian**: `curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs`
-- **macOS**: `brew install node`
+```bash
+mise use -g node
+```
 
 ### dtach (terminal session persistence — essential for remote)
 
@@ -151,26 +159,19 @@ source ~/.bashrc  # or restart shell
 ### uv (Python package manager)
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+mise use -g uv
 ```
 
 ### age (encryption — required by fnox)
 
-- **Ubuntu/Debian**: `sudo apt install -y age`
-- **macOS**: `brew install age`
+```bash
+mise use -g age
+```
 
 ### fnox (secrets management — required)
 
-- **macOS**: `brew install jdx/tap/fnox`
-- **Linux / fallback**: Download the latest release binary from the GitHub API:
-
 ```bash
-# Detect platform and install the latest fnox release
-FNOX_URL=$(curl -s https://api.github.com/repos/jdx/fnox/releases/latest \
-  | grep "browser_download_url" \
-  | grep "$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" \
-  | head -1 | cut -d '"' -f 4)
-curl -fsSL "$FNOX_URL" | sudo tar xz -C /usr/local/bin fnox
+mise use -g fnox
 ```
 
 ### Claude Code (AI coding agent CLI)
