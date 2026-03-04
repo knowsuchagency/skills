@@ -174,6 +174,12 @@ mise use -g age
 mise use -g fnox
 ```
 
+### jq (JSON processor)
+
+```bash
+mise use -g jq
+```
+
 ### Claude Code (AI coding agent CLI)
 
 Check if already installed:
