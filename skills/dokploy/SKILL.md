@@ -1,83 +1,111 @@
 ---
 name: dokploy
 description: Manage Dokploy self-hosted PaaS deployments via CLI. Use when the user asks to deploy, manage, inspect, or configure applications, databases, Docker containers, domains, backups, or any infrastructure on Dokploy. Triggers include "dokploy", "deploy to dokploy", "list projects", "check containers", "manage domains", or any Dokploy administration task.
-allowed-tools: Bash(uv run *)
+allowed-tools: Bash(uvx mcp2cli *), Bash(fnox *)
 ---
 
 # Dokploy CLI
 
-A dynamic CLI generated from the Dokploy OpenAPI spec. Every API endpoint becomes a subcommand with typed flags.
+Interact with your Dokploy instance via `mcp2cli`, which dynamically generates a CLI from the Dokploy OpenAPI spec.
 
 ## Usage
 
 ```bash
-uv run SKILL_DIR/scripts/dokploy.py [OPTIONS] COMMAND [ARGS...]
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  [OPTIONS] COMMAND [ARGS...]
+```
+
+Or with env vars already exported:
+
+```bash
+uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  [OPTIONS] COMMAND [ARGS...]
 ```
 
 ## Global Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--org` | `DEFAULT` | fnox key suffix — loads `DOKPLOY_<ORG>` token |
-| `--url` | from `DOKPLOY_URL` env/fnox | Override base URL |
-| `--list` | | List all available commands grouped by resource |
-| `--refresh-cache` | | Force-refresh the cached OpenAPI spec |
-| `--pretty` | | Pretty-print JSON output |
+| Flag | Description |
+|------|-------------|
+| `--list` | List all available commands grouped by resource |
+| `--pretty` | Pretty-print JSON output |
+| `--cache-ttl SECONDS` | Cache the spec for N seconds (default: 3600) |
+| `--refresh` | Force-refresh the cached spec |
 
 ## Setup
 
 ### Base URL
 
-The script needs to know your Dokploy instance URL. Configure it one of these ways (checked in order):
+Store your Dokploy instance URL in fnox:
 
-1. `--url` flag: `uv run dokploy.py --url https://dokploy.example.com/api ...`
-2. `DOKPLOY_URL` environment variable
-3. fnox: `fnox set DOKPLOY_URL https://dokploy.example.com/api -g`
+```bash
+fnox set DOKPLOY_URL https://dokploy.example.com/api -g
+```
 
 ### Authentication
 
-API tokens are stored in fnox (or env vars) with the naming convention `DOKPLOY_<ORG>`:
-- `DOKPLOY_DEFAULT` — default org token (used when no `--org` is specified)
-- `DOKPLOY_<NAME>` — additional org tokens as needed
+Store the API token in fnox:
 
-Store a token: `fnox set DOKPLOY_DEFAULT <your-api-token> -g`
+```bash
+fnox set DOKPLOY_DEFAULT <your-api-token> -g
+```
 
-Select a non-default org with `--org <NAME>`. The token is loaded via `fnox get DOKPLOY_<NAME>`.
+The `--auth-header "x-api-key:env:DOKPLOY_DEFAULT"` flag tells mcp2cli to read the token from the `DOKPLOY_DEFAULT` environment variable at runtime. Use `fnox exec --` to inject it.
 
 ## Examples
 
 ```bash
 # List all available commands
-uv run dokploy.py --list
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  --list
 
 # List all projects
-uv run dokploy.py --pretty project.all
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  --pretty project.all
 
 # Get a specific application
-uv run dokploy.py --pretty application.one --applicationId <appId>
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  --pretty application.one --applicationId <appId>
 
 # Create a project
-uv run dokploy.py project.create --name "my-project"
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  project.create --name "my-project"
 
 # Deploy an application
-uv run dokploy.py application.deploy --applicationId <appId>
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  application.deploy --applicationId <appId>
 
 # List Docker containers
-uv run dokploy.py --pretty docker.getContainers
-
-# Use a different org
-uv run dokploy.py --org <ORG_NAME> project.all
-
-# Complex body via stdin
-echo '{"name":"app","projectId":"xyz"}' | uv run dokploy.py application.create --stdin
-
-# Get help for any command
-uv run dokploy.py application.deploy --help
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  --pretty docker.getContainers
 ```
 
 ## Deploying a Local Repo (Git Provider)
 
-Dokploy can clone directly from the host machine via SSH — no GitHub/GitLab needed. This is the preferred approach for repos that already live on the server.
+Dokploy can clone directly from the host machine via SSH -- no GitHub/GitLab needed. This is the preferred approach for repos that already live on the server.
 
 ### Prerequisites
 
@@ -86,11 +114,20 @@ An SSH key must exist in Dokploy and its public key must be in `~/.ssh/authorize
 To create and register a new key:
 ```bash
 # Generate a key in Dokploy
-uv run dokploy.py sshKey.generate --type ed25519
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  sshKey.generate --type ed25519
+
 # Save it (use the output privateKey/publicKey)
-uv run dokploy.py sshKey.create \
-  --name "host-key" --description "SSH key for host access" \
+fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
+  sshKey.create --name "host-key" --description "SSH key for host access" \
   --privateKey "$PRIVATE_KEY" --publicKey "$PUBLIC_KEY"
+
 # Add the public key to the host
 echo "$PUBLIC_KEY" >> ~/.ssh/authorized_keys
 ```
@@ -98,19 +135,25 @@ echo "$PUBLIC_KEY" >> ~/.ssh/authorized_keys
 ### Deployment Workflow
 
 ```bash
+# For brevity, define a helper alias (or use fnox exec inline each time):
+alias dk='fnox exec -- uvx mcp2cli \
+  --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
+  --base-url "$DOKPLOY_URL" \
+  --auth-header "x-api-key:env:DOKPLOY_DEFAULT"'
+
 # 1. Create a project
-uv run dokploy.py project.create --name "MyApp"
+dk project.create --name "MyApp"
 # Returns: projectId, environmentId
 
 # 2. Create a compose service
-uv run dokploy.py compose.create \
+dk compose.create \
   --name "myapp" \
   --environmentId "<envId>" \
   --composeType "docker-compose"
 # Returns: composeId
 
 # 3. Configure Git provider (clone from host via Docker bridge gateway)
-uv run dokploy.py compose.update \
+dk compose.update \
   --composeId "<composeId>" \
   --sourceType "git" \
   --customGitUrl "ssh://<user>@<docker-bridge-ip>/absolute/path/to/repo" \
@@ -118,12 +161,12 @@ uv run dokploy.py compose.update \
   --customGitSSHKeyId "<sshKeyId>"
 
 # 4. Set environment variables (if needed)
-uv run dokploy.py compose.update \
+dk compose.update \
   --composeId "<composeId>" \
   --env "KEY=value"
 
 # 5. Create domain with HTTPS
-uv run dokploy.py domain.create \
+dk domain.create \
   --host "app.example.com" \
   --port 8080 \
   --https \
@@ -133,10 +176,10 @@ uv run dokploy.py domain.create \
   --certificateType "letsencrypt"
 
 # 6. Deploy
-uv run dokploy.py compose.deploy --composeId "<composeId>"
+dk compose.deploy --composeId "<composeId>"
 
 # 7. Check deployment status
-uv run dokploy.py --pretty deployment.allByCompose --composeId "<composeId>"
+dk --pretty deployment.allByCompose --composeId "<composeId>"
 ```
 
 ### Important Notes
@@ -148,4 +191,4 @@ uv run dokploy.py --pretty deployment.allByCompose --composeId "<composeId>"
 
 ## Spec Caching
 
-The OpenAPI spec is cached at `~/.cache/dokploy/<org>_openapi.json` for 1 hour. Use `--refresh-cache` to force a fresh fetch.
+mcp2cli caches the OpenAPI spec automatically (default: 1 hour). Use `--refresh` to force a fresh fetch, or `--cache-ttl <seconds>` to customize the TTL.
