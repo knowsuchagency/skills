@@ -59,6 +59,8 @@ The `--auth-header "x-api-key:env:DOKPLOY_DEFAULT"` flag tells mcp2cli to read t
 
 ## Examples
 
+Commands use **kebab-case** (e.g., `project-all`, `application-one`, `docker-get-containers`). Use `--list` to discover all available commands.
+
 ```bash
 # List all available commands
 fnox exec -- uvx mcp2cli \
@@ -72,35 +74,35 @@ fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  --pretty project.all
+  --pretty project-all
 
 # Get a specific application
 fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  --pretty application.one --applicationId <appId>
+  --pretty application-one --applicationId <appId>
 
 # Create a project
 fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  project.create --name "my-project"
+  project-create --name "my-project"
 
 # Deploy an application
 fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  application.deploy --applicationId <appId>
+  application-deploy --applicationId <appId>
 
 # List Docker containers
 fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  --pretty docker.getContainers
+  --pretty docker-get-containers
 ```
 
 ## Deploying a Local Repo (Git Provider)
@@ -118,14 +120,14 @@ fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  sshKey.generate --type ed25519
+  ssh-key-generate --type ed25519
 
 # Save it (use the output privateKey/publicKey)
 fnox exec -- uvx mcp2cli \
   --spec "$DOKPLOY_URL/settings.getOpenApiDocument" \
   --base-url "$DOKPLOY_URL" \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT" \
-  sshKey.create --name "host-key" --description "SSH key for host access" \
+  ssh-key-create --name "host-key" --description "SSH key for host access" \
   --privateKey "$PRIVATE_KEY" --publicKey "$PUBLIC_KEY"
 
 # Add the public key to the host
@@ -142,18 +144,18 @@ alias dk='fnox exec -- uvx mcp2cli \
   --auth-header "x-api-key:env:DOKPLOY_DEFAULT"'
 
 # 1. Create a project
-dk project.create --name "MyApp"
+dk project-create --name "MyApp"
 # Returns: projectId, environmentId
 
 # 2. Create a compose service
-dk compose.create \
+dk compose-create \
   --name "myapp" \
   --environmentId "<envId>" \
   --composeType "docker-compose"
 # Returns: composeId
 
 # 3. Configure Git provider (clone from host via Docker bridge gateway)
-dk compose.update \
+dk compose-update \
   --composeId "<composeId>" \
   --sourceType "git" \
   --customGitUrl "ssh://<user>@<docker-bridge-ip>/absolute/path/to/repo" \
@@ -161,12 +163,12 @@ dk compose.update \
   --customGitSSHKeyId "<sshKeyId>"
 
 # 4. Set environment variables (if needed)
-dk compose.update \
+dk compose-update \
   --composeId "<composeId>" \
   --env "KEY=value"
 
 # 5. Create domain with HTTPS
-dk domain.create \
+dk domain-create \
   --host "app.example.com" \
   --port 8080 \
   --https \
@@ -176,17 +178,17 @@ dk domain.create \
   --certificateType "letsencrypt"
 
 # 6. Deploy
-dk compose.deploy --composeId "<composeId>"
+dk compose-deploy --composeId "<composeId>"
 
 # 7. Check deployment status
-dk --pretty deployment.allByCompose --composeId "<composeId>"
+dk --pretty deployment-all-by-compose --composeId "<composeId>"
 ```
 
 ### Important Notes
 
 - **Docker bridge gateway IP**: Find it with `docker network inspect bridge | jq '.[0].IPAM.Config[0].Gateway'`. Use this IP in Git URLs so Dokploy containers can reach the host via SSH (e.g., `ssh://user@172.17.0.1/path/to/repo`).
 - **Host port conflicts**: If the compose file binds host ports (e.g., `ports: "8090:8090"`), set a non-conflicting port via env vars. Traefik handles external routing, so host port bindings are only needed for inter-service access.
-- **Domain port**: The `--port` in `domain.create` refers to the container's internal port, not the host-mapped port.
+- **Domain port**: The `--port` in `domain-create` refers to the container's internal port, not the host-mapped port.
 - **Service name**: The `--serviceName` must match the service key in the docker-compose.yml (e.g., `pocketbase`, not the container name).
 
 ## Spec Caching
