@@ -150,32 +150,35 @@ dk project-create --name "MyApp"
 # 2. Create a compose service
 dk compose-create \
   --name "myapp" \
-  --environmentId "<envId>" \
-  --composeType "docker-compose"
+  --environment-id "<envId>" \
+  --compose-type "docker-compose"
 # Returns: composeId
 
 # 3. Configure Git provider (clone from host via Docker bridge gateway)
 dk compose-update \
-  --composeId "<composeId>" \
-  --sourceType "git" \
-  --customGitUrl "ssh://<user>@<docker-bridge-ip>/absolute/path/to/repo" \
-  --customGitBranch "main" \
-  --customGitSSHKeyId "<sshKeyId>"
+  --compose-id "<composeId>" \
+  --source-type "git" \
+  --custom-git-url "ssh://<user>@<docker-bridge-ip>/absolute/path/to/repo" \
+  --custom-git-branch "main" \
+  --custom-git-sshkey-id "<sshKeyId>"
 
 # 4. Set environment variables (if needed)
 dk compose-update \
-  --composeId "<composeId>" \
+  --compose-id "<composeId>" \
   --env "KEY=value"
 
 # 5. Create domain with HTTPS
+# Use --certificate-type "none" because Cloudflare origin certificates
+# are already installed in Dokploy. Do NOT use "letsencrypt" — it will
+# fail or conflict with Cloudflare's proxy.
 dk domain-create \
   --host "app.example.com" \
   --port 8080 \
   --https \
   --composeId "<composeId>" \
-  --serviceName "service-name-from-compose" \
-  --domainType "compose" \
-  --certificateType "letsencrypt"
+  --service-name "service-name-from-compose" \
+  --domain-type "compose" \
+  --certificate-type "none"
 
 # 6. Deploy
 dk compose-deploy --composeId "<composeId>"
@@ -187,9 +190,10 @@ dk --pretty deployment-all-by-compose --composeId "<composeId>"
 ### Important Notes
 
 - **Docker bridge gateway IP**: Find it with `docker network inspect bridge | jq '.[0].IPAM.Config[0].Gateway'`. Use this IP in Git URLs so Dokploy containers can reach the host via SSH (e.g., `ssh://user@172.17.0.1/path/to/repo`).
-- **Host port conflicts**: If the compose file binds host ports (e.g., `ports: "8090:8090"`), set a non-conflicting port via env vars. Traefik handles external routing, so host port bindings are only needed for inter-service access.
+- **Host port conflicts**: Use `expose` instead of `ports` in docker-compose.yml. Traefik handles external routing, so host port bindings are unnecessary and cause conflicts.
 - **Domain port**: The `--port` in `domain-create` refers to the container's internal port, not the host-mapped port.
-- **Service name**: The `--serviceName` must match the service key in the docker-compose.yml (e.g., `pocketbase`, not the container name).
+- **Service name**: The `--service-name` must match the service key in the docker-compose.yml (e.g., `pocketbase`, not the container name).
+- **TLS certificates**: Use `--certificate-type "none"` when creating domains. Cloudflare origin certificates are already installed in Dokploy — using "letsencrypt" will fail or conflict with Cloudflare's proxy.
 
 ## Spec Caching
 
