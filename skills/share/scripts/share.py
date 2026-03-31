@@ -13,27 +13,27 @@ from pathlib import Path
 
 import httpx
 
-ZIPLINE_URL = "https://zipline.knowsuchagency.ai"
+DEFAULT_ZIPLINE_URL = "https://zipline.knowsuchagency.ai"
 
 
-def load_token() -> str:
-    token = os.environ.get("ZIPLINE_TOKEN")
-    if token:
-        return token
+def load_from_env_or_fnox(key: str) -> str | None:
+    value = os.environ.get(key)
+    if value:
+        return value
     result = subprocess.run(
-        ["fnox", "get", "ZIPLINE_TOKEN"],
+        ["fnox", "get", key],
         capture_output=True,
         text=True,
     )
-    if result.returncode != 0:
-        print(f"Error: failed to get ZIPLINE_TOKEN from fnox: {result.stderr.strip()}", file=sys.stderr)
-        sys.exit(1)
-    return result.stdout.strip()
+    if result.returncode == 0:
+        return result.stdout.strip()
+    return None
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Upload files to Zipline")
     parser.add_argument("files", nargs="+", help="File path(s) to upload")
+    parser.add_argument("--url", default=None, help="Zipline server URL (default: env/fnox ZIPLINE_URL or built-in)")
     parser.add_argument("--expires", default=None, help="Auto-delete after duration (e.g. 1d, 7d)")
     parser.add_argument("--password", default=None, help="Password-protect the file")
     parser.add_argument("--max-views", type=int, default=None, help="Delete after N views")
@@ -42,7 +42,11 @@ def main() -> None:
     parser.add_argument("--folder", default=None, help="Folder ID to place files in")
     args = parser.parse_args()
 
-    token = load_token()
+    zipline_url = args.url or load_from_env_or_fnox("ZIPLINE_URL") or DEFAULT_ZIPLINE_URL
+    token = load_from_env_or_fnox("ZIPLINE_TOKEN")
+    if not token:
+        print("Error: ZIPLINE_TOKEN not found in environment or fnox", file=sys.stderr)
+        sys.exit(1)
 
     headers: dict[str, str] = {"Authorization": token}
     if args.expires:
@@ -68,7 +72,7 @@ def main() -> None:
         files.append(("file", (path.name, path.read_bytes(), mime)))
 
     with httpx.Client(timeout=120) as client:
-        resp = client.post(f"{ZIPLINE_URL}/api/upload", headers=headers, files=files)
+        resp = client.post(f"{zipline_url}/api/upload", headers=headers, files=files)
         resp.raise_for_status()
 
     data = resp.json()
