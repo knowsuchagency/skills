@@ -27,6 +27,7 @@ Within Claude Code:
 | `linear-cli` | Manage Linear issues, projects, and teams |
 | `typst` | Expert reference for the Typst typesetting system |
 | `wmill-cli` | Manage Windmill workspaces and scripts |
+| `share` | Share/upload files to Zipline |
 | `mise` | Comprehensive guide for mise — polyglot tool version manager, environment manager, and task runner |
 
 ## Prerequisites
