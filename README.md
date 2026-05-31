@@ -4,10 +4,20 @@ A collection of skills for [Claude Code](https://claude.com/claude-code).
 
 ## Installation
 
-Copy the skill directories you want into your Claude Code skills directory:
+Install with the [`skills`](https://github.com/vercel-labs/skills) CLI:
 
-```
-cp -r skills/<skill-name> ~/.claude/skills/
+```bash
+# Install all skills
+npx skills add knowsuchagency/skills
+
+# List skills before installing
+npx skills add knowsuchagency/skills --list
+
+# Install specific skills
+npx skills add knowsuchagency/skills --skill generate-image --skill fnox
+
+# Install globally (~/.claude/skills) for Claude Code
+npx skills add knowsuchagency/skills -g -a claude-code
 ```
 
 ## Skills
