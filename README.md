@@ -1,17 +1,13 @@
-# knowsuchagency — Claude Code Plugin
+# knowsuchagency — Skills
 
 A collection of skills for [Claude Code](https://claude.com/claude-code).
 
 ## Installation
 
-Within Claude Code:
+Copy the skill directories you want into your Claude Code skills directory:
 
 ```
-/plugin marketplace add knowsuchagency/skills
-```
-
-```
-/plugin install knowsuchagency
+cp -r skills/<skill-name> ~/.claude/skills/
 ```
 
 ## Skills
