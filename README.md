@@ -31,6 +31,7 @@ npx skills add knowsuchagency/skills -g -a claude-code
 | `gemini-cli` | Use the Google Gemini coding agent via CLI |
 | `typst` | Expert reference for the Typst typesetting system |
 | `mise` | Comprehensive guide for mise — polyglot tool version manager, environment manager, and task runner |
+| `pitchfork` | Guide for pitchfork — daemon/process manager for developers (background services, auto start/stop, ready checks) |
 
 ## Prerequisites
 
